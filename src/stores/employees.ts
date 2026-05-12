@@ -13,5 +13,14 @@ export const useEmployeesStore = defineStore('employees', () => {
 
   const count = computed(() => list.value.length)
 
-  return { list, count, loadFromSample }
+  /** @returns whether the employee was added; false if `code` already exists */
+  function addEmployee(employee: Employee): boolean {
+    if (list.value.some((e) => e.code === employee.code)) {
+      return false
+    }
+    list.value.push({ ...employee })
+    return true
+  }
+
+  return { list, count, loadFromSample, addEmployee }
 })
