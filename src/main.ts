@@ -12,6 +12,7 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
+// Seed list once per session so deep links have data and navigating away from create/index does not wipe in-memory rows.
 useEmployeesStore(pinia).loadFromSample()
 
 app.mount('#app')

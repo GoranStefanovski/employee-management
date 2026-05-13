@@ -45,6 +45,9 @@ const touched = reactive({
 
 const submitAttempted = ref(false)
 const fieldErrors = ref<Record<string, string>>({})
+const saveError = ref('')
+const showDeleteDialog = ref(false)
+const deleteFlowError = ref('')
 
 const existingCodesExceptCurrent = computed(() => {
   const s = new Set(employees.list.map((e) => e.code))
@@ -66,6 +69,8 @@ function resetFormUi() {
 watch(
   () => [code.value, route.name, employee.value] as const,
   ([, name, emp]) => {
+    saveError.value = ''
+    deleteFlowError.value = ''
     if (name === 'employee-edit' && emp) {
       Object.assign(form, employeeToForm(emp))
       resetFormUi()
@@ -90,6 +95,7 @@ function formatDateLabel(iso: string | null | undefined): string {
 
 function onSaveEdit() {
   submitAttempted.value = true
+  saveError.value = ''
   const result = validateEmployeeForm(form, {
     existingCodes: existingCodesExceptCurrent.value,
   })
@@ -97,7 +103,11 @@ function onSaveEdit() {
   if (!result.valid || !result.normalized) return
 
   const next: Employee = { ...result.normalized, code: code.value }
-  if (!employees.updateEmployee(code.value, next)) return
+  if (!employees.updateEmployee(code.value, next)) {
+    saveError.value =
+      'Could not save changes. This employee may have been removed or the list may be out of sync.'
+    return
+  }
 
   router.push({ name: 'employee-view', params: { code: code.value } })
 }
@@ -110,9 +120,8 @@ function goToEdit() {
   router.push({ name: 'employee-edit', params: { code: code.value } })
 }
 
-const showDeleteDialog = ref(false)
-
 function openDeleteDialog() {
+  deleteFlowError.value = ''
   showDeleteDialog.value = true
 }
 
@@ -122,7 +131,11 @@ function closeDeleteDialog() {
 
 function confirmDelete() {
   if (!employee.value) return
-  employees.removeEmployee(code.value)
+  if (!employees.removeEmployee(code.value)) {
+    showDeleteDialog.value = false
+    deleteFlowError.value = 'Could not delete this employee. They may have already been removed.'
+    return
+  }
   showDeleteDialog.value = false
   router.push({ name: 'employees' })
 }
@@ -132,7 +145,9 @@ function confirmDelete() {
   <main class="mx-auto max-w-lg px-4 py-8">
     <template v-if="!employee">
       <h1 class="text-2xl font-semibold text-slate-900">Employee not found</h1>
-      <p class="mt-2 text-slate-600">No employee matches this code.</p>
+      <p class="mt-2 text-slate-600">
+        Invalid or removed code. This employee may have been deleted, or the link is out of date.
+      </p>
       <RouterLink
         :to="{ name: 'employees' }"
         class="mt-6 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800"
@@ -168,6 +183,14 @@ function confirmDelete() {
         </div>
       </div>
 
+      <div
+        v-if="deleteFlowError"
+        class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        role="alert"
+      >
+        {{ deleteFlowError }}
+      </div>
+
       <dl class="mt-8 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
         <div class="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:gap-4">
           <dt class="text-sm font-medium text-slate-500">Full name</dt>
@@ -199,6 +222,14 @@ function confirmDelete() {
     <template v-else>
       <h1 class="text-2xl font-semibold text-slate-900">Edit employee</h1>
       <p class="mt-1 text-sm text-slate-600">{{ employee.fullName }} ({{ employee.code }})</p>
+
+      <div
+        v-if="saveError"
+        class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        role="alert"
+      >
+        {{ saveError }}
+      </div>
 
       <form class="mt-8 space-y-5" novalidate @submit.prevent="onSaveEdit">
         <div>

@@ -26,7 +26,7 @@ export const useEmployeesStore = defineStore('employees', () => {
     return list.value.find((e) => e.code === code)
   }
 
-  /** Replace row matching `code` with a clone; URL `code` wins if payload differs. */
+  /** Replace row matching `code` with a clone; URL param always wins for `code` so bookmarks stay consistent. */
   function updateEmployee(code: string, employee: Employee): boolean {
     const i = list.value.findIndex((e) => e.code === code)
     if (i === -1) return false
