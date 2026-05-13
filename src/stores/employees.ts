@@ -22,5 +22,25 @@ export const useEmployeesStore = defineStore('employees', () => {
     return true
   }
 
-  return { list, count, loadFromSample, addEmployee }
+  function findByCode(code: string): Employee | undefined {
+    return list.value.find((e) => e.code === code)
+  }
+
+  /** Replace row matching `code` with a clone; URL `code` wins if payload differs. */
+  function updateEmployee(code: string, employee: Employee): boolean {
+    const i = list.value.findIndex((e) => e.code === code)
+    if (i === -1) return false
+    list.value[i] = { ...employee, code }
+    return true
+  }
+
+  /** Remove the row with this `code`. @returns false if not found. */
+  function removeEmployee(code: string): boolean {
+    const i = list.value.findIndex((e) => e.code === code)
+    if (i === -1) return false
+    list.value.splice(i, 1)
+    return true
+  }
+
+  return { list, count, loadFromSample, addEmployee, findByCode, updateEmployee, removeEmployee }
 })
